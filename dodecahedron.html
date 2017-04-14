@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dodecahedron</title>
+	<script type="x-shader/x-vertex" id="vshader">
+		attribute vec3 aPosition;         // position of current vertex
+		attribute vec3 aNormal;           // normal of current vertex
+
+		uniform mat4 uModel;              // model matrix
+		uniform mat4 uView;               // view matrix
+		uniform mat4 uProjection;         // projection matrix
+		uniform mat4 uNormal;             // normal matrix
+
+		varying vec4 vColor;
+
+		void main() {
+			gl_Position = uProjection * uView * uModel * vec4(aPosition,1.0);
+			vColor = vec4(0.0,1.0,0.0,1.0);
+		}
+	</script>
+	<script type="x-shader/x-fragment" id="fshader">
+		precision mediump float;
+		varying vec4 vColor;
+		void main() {
+			gl_FragColor = vColor;
+		}
+	</script>
+	<script src="./lib/webgl-init.js"></script>
+	<script src="./lib/webgl-utils.js"></script>
+	<script src="./lib/webgl-debug.js"></script>
+	<script src="./lib/gl-matrix.js"></script>
+	<script>
+		function main() {
+			var canvas = document.getElementById("c");
+			var gl = initializeWebGL(canvas);
+
+			var vertexShader = initializeShader(gl,"vshader");
+			var fragmentShader = initializeShader(gl, "fshader");
+			var program = initializeProgram(gl,vertexShader,fragmentShader);
+			gl.useProgram(program);
+
+			var a = 1;
+			var c = (1 + Math.sqrt(5))/2; //golden ratio
+			var b = 1/c;
+			
+            var cube_vertices = [   // Coordinates
+				//face 1
+				-a,-a,-a,	0,-b,-c,	a,-a,-a,	b,-c,0,		-b,-c,0,
+				//face 2
+				-c,0,-b,	-a,a,-a,	0,b,-c,	
+				//face 3
+				a,a,-a,		c,0,-b,
+				//face 4
+				c,0,b,		a,-a,a,
+				//face 5
+				0,-b,c,		-a,-a,a,
+				//face 6
+				-c,0,b,
+				
+				//face 7
+				-a,a,a,		-b,c,-0,
+				
+				//face 8
+				-b,c,0,		b,c,0,
+				
+				//face 9
+				a,a,a,
+				
+				//face 10
+				0,b,c
+				
+				//face 11 and 12 have no unique points
+				
+			];
+
+			//buffer creation
+			var cubeVerticesBuffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, cubeVerticesBuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(cube_vertices), gl.STATIC_DRAW);
+			//attribute variable mapping to buffer
+			var aPosition = gl.getAttribLocation(program,"aPosition");
+			gl.vertexAttribPointer(aPosition,3,gl.FLOAT,false,0,0);
+			gl.enableVertexAttribArray(aPosition);
+			//unbind buffer to ARRAY_BUFFER POINTER
+			gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+			var indices = [
+				0,1,2,3,4,	//face 1
+				0,5,6,7,1,	//face 2
+				1,7,8,9,2,	//face 3
+				2,9,10,11,3,	//face 4
+				3,11,12,13,4,	//face 5
+				4,13,14,5,0,	//face 6
+				5,14,15,16,6,	//face 7
+				7,6,17,18,8,	//face 8
+				9,8,18,19,10,	//face 9
+				11,12,20,19,10,	//face 10
+				13,14,15,20,12, //face 11
+				15,20,19,18,17
+				
+			];
+			//buffer creation
+			var indexBuffer = gl.createBuffer();
+			gl.bindBuffer(
+				gl.ELEMENT_ARRAY_BUFFER,	// buffer used for element indices
+				indexBuffer					// buffer to be used
+			);
+			gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(indices), gl.STATIC_DRAW);
+			//unbind buffer to gl.ELEMENT_ARRAY_BUFFER POINTER
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+
+
+			//set-up model matrix, view matrix, and projection matrix
+			var modelMatrix = mat4.create();
+			var uModel = gl.getUniformLocation(program,"uModel");
+			gl.uniformMatrix4fv(uModel,false,modelMatrix);
+
+			var viewMatrix = mat4.create();
+			var uView = gl.getUniformLocation(program,"uView");
+			mat4.lookAt(viewMatrix,[5,5,5],[0,0,0],[0,1,0]);
+			gl.uniformMatrix4fv(uView,false,viewMatrix);
+
+			var projectionMatrix = mat4.create();
+			var uProjection = gl.getUniformLocation(program,"uProjection");
+			mat4.perspective(projectionMatrix,glMatrix.toRadian(30),canvas.width/canvas.height,1,100);
+			gl.uniformMatrix4fv(uProjection,false,projectionMatrix);
+
+			//draw scene
+			gl.clearColor(0, 0, 0, 1);
+			gl.enable(gl.DEPTH_TEST);
+			gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+			gl.drawElements(
+                gl.LINE_STRIP,       // draw mode
+                indices.length,     // number of elements to be rendered
+                gl.UNSIGNED_BYTE,   // type of values in the buffer: gl.UNSIGNED_BYTE or gl.SIGNED_BYTE
+                0                   // offset in the array buffer
+            );
+		}
+	</script>
+</head>
+<body onload="main()">
+	<canvas id="c" width="400" height="400" style="border: 1px black solid; ">
+	</canvas>
+
+
+</body>
+</html>
